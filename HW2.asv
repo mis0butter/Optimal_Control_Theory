@@ -4,35 +4,90 @@
 
 %% Problem 1 
 
+clear; 
+
 % inputs Q and b 
 Q = [2 0; 0 2]; 
 b = [3; 5];
-
-% first guess 
-x0 = [13; -2]; 
 
 % g function 
 g = @(x) Q*x - b; 
 
 % error threshold 
-e = 1e-3; 
+err   = 1e-3; 
 delta = 1; 
 
-% Compute 
-[x_arr, i] = min_perf(delta, e, x0, Q, b, g); 
+% FIRST GUESS 
+disp('FIRST GUESS')
+x0 = [13; -2]; 
+[x_arr, i] = min_perf(delta, err, x0, Q, b, g); 
+x_arr(end,:)
+i 
+
+% SECOND GUESS 
+disp('SECOND GUESS') 
+x0 = [-10; 7]; 
+[x_arr, i] = min_perf(delta, err, x0, Q, b, g); 
+x_arr(end,:)
+i 
+
+% THIRD GUESS 
+disp('THIRD GUESS') 
+x0 = [-2; 14]; 
+[x_arr, i] = min_perf(delta, err, x0, Q, b, g); 
+x_arr(end,:)
+i 
 
 % plot(x_arr(:,1), x_arr(:,2))
 
+%% Problem 2 
+
+clear; 
+
+x = sym('x', [2 1]); 
+
+% create performance index functions 
+f = 100 * (x(2) - x(1)^2)^2 + (1 - x(1))^2; 
+f = matlabFunction(f); 
+h = (x(1) + 0.5)^2 + (x(2) + 0.5)^2 - 0.25; 
+h = matlabFunction(h); 
+
+% initialize 
+a0   = 0.1; 
+akp1 = a0; ak = a0; 
+b    = 6;
+x0   = [1; 1]; 
+xkp1 = x0; 
+err  = 10e-4; 
+
+phi = @(x) f(x(1), x(2)) + 1/2 * ak * h(x(1), x(2))^2; 
+
+% iterate 
+% while h(xkp1(1), xkp1(2)) > err 
+%     
+%     xk = xkp1; 
+%     ak   = b * akp1; 
+% 
+    xkp1 = fminsearch(phi, xk); 
+%     
+% end 
+
+%% Problem 3 
+
+
+
 %% subfunctions 
 
-function [x_arr, i] = min_perf(delta, e, x0, Q, b, g) 
+function [x_arr, i] = min_perf(delta, err, x0, Q, b, g) 
+% Minimize performance index 
 
+% initialize 
 i = 0; 
 x_arr = x0'; 
 xkp1  = x0; 
 
 % start iterative process 
-while delta > e
+while delta > err
     
     % index loops 
     i = i + 1; 
