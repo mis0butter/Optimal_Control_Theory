@@ -1,0 +1,23 @@
+% Optimal control theory 
+% HW 2
+% Junette Hsin 
+
+% inputs Q and b 
+Q = [2 0; 0 2]; 
+b = [3; 5];
+
+% first guess 
+x0 = [1; 2]; 
+
+% g function 
+g = @(x) Q*x - b; 
+
+% start iterative process 
+xk = x0; 
+ak = ( 1/2 * xk' * Q * g(xk) + 1/2 * g(xk)' * Q * xk - g(xk)' ) * ... 
+    ( 1/2 * g(xk)' * Q * g(xk) + 1/2 * g(xk)' * Q * g(xk) )^-1; 
+xkp1 = xk - ak * g(xk); 
+delta = abs(xkp1 - xk); 
+
+while delta > e
+
