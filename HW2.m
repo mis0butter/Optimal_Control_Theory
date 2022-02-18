@@ -7,8 +7,8 @@
 clear; 
 
 % inputs Q and b 
-Q = [2 0; 0 2]; 
-b = [3; 5];
+Q = [12 1; 1 2]; 
+b = [3; 2];
 
 % g function 
 g = @(x) Q*x - b; 
@@ -21,24 +21,28 @@ delta = 1;
 disp('FIRST GUESS')
 x0 = [13; -2]; 
 [x_arr, i] = min_perf(delta, err, x0, Q, b, g); 
-x_arr(end,:)
-i 
+
+    % plot 
+    fname = 'P1: Minimize Performance Index (Case 1)'; 
+    plot_x1x2(fname, x_arr, i)
 
 % SECOND GUESS 
 disp('SECOND GUESS') 
 x0 = [-10; 7]; 
 [x_arr, i] = min_perf(delta, err, x0, Q, b, g); 
-x_arr(end,:)
-i 
+
+    % plot 
+    fname = 'P1: Minimize Performance Index (Case 2)'; 
+    plot_x1x2(fname, x_arr, i)
 
 % THIRD GUESS 
 disp('THIRD GUESS') 
 x0 = [-2; 14]; 
 [x_arr, i] = min_perf(delta, err, x0, Q, b, g); 
-x_arr(end,:)
-i 
 
-% plot(x_arr(:,1), x_arr(:,2))
+    % plot 
+    fname = 'P1: Minimize Performance Index (Case 3)'; 
+    plot_x1x2(fname, x_arr, i)
 
 %% Problem 2 
 
@@ -55,58 +59,97 @@ h = matlabFunction(h);
 % initialize 
 b    = 6;
 a0   = 0.1; 
-ak   = a0 / b; 
 x0   = [1; 1]; 
-xkp1 = x0; 
 err  = 10e-4; 
-i    = 0; 
-h_err = h(xkp1(1), xkp1(2));
+j    = 0; 
+
+% first iteration 
+akm1 = a0; 
+xkm1 = x0; 
+h_err = h(xkm1(1), xkm1(2));
+x_arr = x0'; 
 
 % iterate 
 while h_err > err 
     
-    i = i + 1; 
-    
-    xk   = xkp1; 
-    ak   = b * ak; 
+    % current index 
+    j  = j + 1;  
+    ak = b * akm1; 
 
     phi  = @(x) f(x(1), x(2)) + 1/2 * ak * h(x(1), x(2))^2; 
-    xkp1 = fminsearch(phi, xk); 
+    xk = fminsearch(phi, xkm1); 
     
-    h_err = h(xkp1(1), xkp1(2)); 
+    % penalty 
+    h_err = h(xk(1), xk(2)); 
+    
+    % save output 
+    x_arr = [x_arr; xk']; 
+    
+    % set up next index 
+    akm1 = ak; 
+    xkm1 = xk; 
     
 end 
 
+% plot 
+fname = 'P2: Equality Constrained Optimization (Penalty)'; 
+plot_x1x2(fname, x_arr, j)
+
+
 %% Problem 3 
+
+clear; 
+
+x = sym('x', [2 1]); 
+
+% create performance index functions 
+f = 100 * (x(2) - x(1)^2)^2 + (1 - x(1))^2; 
+f = matlabFunction(f); 
+h = (x(1) + 0.5)^2 + (x(2) + 0.5)^2 - 0.25; 
+h = matlabFunction(h); 
 
 % initialize 
 b    = 6;
 a0   = 0.1; 
-ak   = a0 / b; 
 x0   = [1; 1]; 
-xkp1 = x0; 
 err  = 10e-4; 
-i    = 0; 
-h_err = h(xkp1(1), xkp1(2));
+k    = 0; 
 lmda0 = 10; 
-lmdak = lmda0; 
 
+% first iteration 
+akm1 = a0; 
+xkm1 = x0; 
+lmdakm1 = lmda0; 
+h_err = h(xkm1(1), xkm1(2));
+x_arr = x0'; 
 
 % iterate 
 while h_err > err 
     
-    i = i + 1; 
-    
-    xk   = xkp1; 
-    ak   = b * ak; 
+    % current index 
+    k     = k + 1; 
+    ak    = b * akm1; 
+    lmdak = lmdakm1 + akm1 * h(xkm1(1), xkm1(2)); 
 
     phi = @(x) f(x(1), x(2)) + lmdak * h(x(1), x(2)) + 1/2 * ak * h(x(1), x(2))^2; 
-    xkp1 = fminsearch(phi, xk); 
+    xk  = fminsearch(phi, xkm1); 
     
-    h_err = h(xkp1(1), xkp1(2)); 
+    % penalty 
+    h_err = h(xk(1), xk(2)); 
+    
+    % save output 
+    x_arr = [x_arr; xk']; 
+    
+    % set up next index 
+    akm1    = ak; 
+    lmdakm1 = lmdak; 
+    xkm1    = xk; 
     
 end 
 
+% plot 
+fname = 'P3: Equality Constrained Optimization (Lagrange Multiplier)'; 
+plot_x1x2(fname, x_arr, k)
 
 %% subfunctions 
 
@@ -114,32 +157,58 @@ function [x_arr, i] = min_perf(delta, err, x0, Q, b, g)
 % Minimize performance index 
 
 % initialize 
-i = 0; 
+i     = 0; 
 x_arr = x0'; 
-xkp1  = x0; 
+xkm1  = x0; 
 
 % start iterative process 
 while delta > err
     
-    % index loops 
+    % current index 
     i = i + 1; 
     
-    xk = xkp1; 
-%     ak = ( 1/2 * xk' * Q * g(xk) + 1/2 * g(xk)' * Q * xk - g(xk)' ) * ... 
-%         ( 1/2 * g(xk)' * Q * g(xk) + 1/2 * g(xk)' * Q * g(xk) )^-1; 
-    ak = ( 1/2 * g(xk)' * Q * xk + 1/2 * xk' * Q * g(xk) - g(xk)' * b) * ... 
-        ( g(xk)' * Q * g(xk) )^-1; 
-    xkp1 = xk - ak * g(xk); 
-    delta = norm(xkp1 - xk); 
+    % calc ak  
+%     ak = ( 1/2 * g(xkm1)' * Q * xkm1 + 1/2 * xkm1' * Q * g(xkm1) - g(xkm1)' * b) * ... 
+%         ( g(xkm1)' * Q * g(xkm1) )^-1;     
+    ak = inv(g(xkm1)' * Q* g(xkm1)) * (xkm1' * Q * g(xkm1) - g(xkm1)' * b ); 
+    
+    % calc xk 
+    xk = xkm1 - ak * g(xkm1); 
+    delta = norm(xkm1 - xk); 
     
     if isnan(delta) 
         disp('Contains NaNs') 
         break
     end 
     
-    x_arr = [x_arr; xkp1']; 
+    % save output 
+    x_arr = [x_arr; xk']; 
+    
+    % set up next index 
+    xkm1 = xk;
 
 end 
+
+end 
+
+% ------------------------------------------------------------------------ 
+
+function plot_x1x2(fname, x_arr, k)
+% plot x1-x2 plane 
+
+figure('name', fname, 'position', [100 100 500 500])
+    hold on; grid on; 
+    scatter(x_arr(1,1), x_arr(1,2), 60, 'linewidth', 2); 
+    scatter(x_arr(2:end-1,1), x_arr(2:end-1,2), 20, 'linewidth', 2)
+    scatter(x_arr(end,1), x_arr(end,2), 60, 'linewidth', 2); 
+    
+    xlabel('x1'); ylabel('x2'); 
+    legend( sprintf('start = [%.3f , %.3f]', x_arr(1,1), x_arr(1,2)), ... 
+        'middle', ... 
+        sprintf('end = [%.3f , %.3f]', x_arr(end,1), x_arr(end,2)), ... 
+        'location', 'southoutside')
+    title( { fname; ... 
+        sprintf( 'Iterations = %d', k ) }); 
 
 end 
 
