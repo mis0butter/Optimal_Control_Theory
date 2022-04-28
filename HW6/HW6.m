@@ -69,12 +69,12 @@ xstar_r = 1/12 * sig_x_r * x_T * t_ir.^3 ...
     - 1/4 * sig_x_r * x_T * T * t_ir.^2 ... 
     - 1/4 * sig_v_r * v_T * t_ir.^2 ... 
     + v0*t_ir + x0; 
-ustar_r = 1/2 * ( ( sig_x_r * x_T ) * t_ir ... 
-    - sig_x_r * x_T * T ... 
-    - sig_v_r * v_T ); 
 vstar_r = 1/4 * sig_x_r * x_T * t_ir.^2 ... 
     - 1/2 * sig_x_r * x_T * T * t_ir ... 
     - 1/2 * sig_v_r * v_T * t_ir + v0; 
+ustar_r = 1/2 * ( ( sig_x_r * x_T ) * t_ir ... 
+    - sig_x_r * x_T * T ... 
+    - sig_v_r * v_T ); 
 
 % control effort 
 ustar2_r = ustar_r.^2; 
@@ -130,7 +130,6 @@ figure()
         plot(t_i, H_i)
         title('H*(t)')
         
-        
     subplot(n,p,2) 
         plot(t_ir, ustar_r, t_r, u_r, '--')
         title({'Rendezvous'; 'u*(t)'}) 
@@ -144,27 +143,107 @@ figure()
     subplot(n,p,8)
         plot(t_r, H_r)
         title('H*(t)')
+
+        %% Homework 2 Question 2
+%% Cart Pole Problem
+clear all;
+close all;
+
+% define initial condition
+x0  = [0,0,1,0]';
+
+% define constants 
+M   = 2;
+m   = 1;
+L   = 0.5;
+g   = 9.81;
+
+% define A
+A   = [0,   1,      0,              0;
+       0,   0,      -(m*g)/M,       0;
+       0,   0,      0,              1;
+       0,   0,      g*(M+m)/(M*L),  0];
+
+% define B
+B   = [ 0;
+        1/M;   
+        0;  
+        -1/(M*L)];
+
+C   = [1,   0,      0,      0;
+       0,   0,      1,      0];
+
+D   = 0;
+
+%% Part 2.1
+
+%% Prine LQR Gain Matrix 
+%  Print out the LQR gain matrix, K∞_LQR , 
+%  and the eigenvalues of A ̃ = A − BK∞
+%  For Q = diag(1, 1, 5, 5), R = 1
+
+% Define Q and R
+Q = diag([1, 1, 5, 5]);
+R = 1;
+
+%% Find optimal gain K∞
+
+[K_LQR, S, eVal] = lqr(A,B,Q,R);
+
+Atilde    = (A - B*K_LQR);
+
+disp("Part 1:");
+K_LQR
+disp("EigenValues of Atilde: " );
+eVal
+
+
+%% Part B
+
+% Define Q and R
+Q = diag([1, 1, 10, 10]);
+R = 15;
+
+
+[K_LQR, S, eVal] = lqr(A,B,Q,R);
+
+Atilde    = (A - B*K_LQR);
+
+disp("Part 2:");
+K_LQR
+disp("EigenValues of Atilde: " );
+eVal
+
+
+% define time interval
+t    = 0:0.01:40;
+XMat = [];
+uMat = [];
+
+% propagate state - since system is LTI, we can find the paticular solution
+% such that x(t) = PHI(t,t0)*x0 so use the state transition matrix to
+% propage the state forward and also solve for the associated control input
+for ii=1:numel(t)
+    xk = expm(Atilde*t(ii))*x0;
+    uk = -K_LQR * xk;
+
+    XMat = [XMat xk];
+    uMat = [uMat uk];
+end
+
+ylabels = {'$x$','$\dot{x}$', '$\theta$','$\dot{\theta}$'};
+
+figure(1);
+
+for jj=1:size(XMat,1)
+        ax = subplot(2,2,jj);
+        plot(t,XMat(jj,:))
+        xlabel('Time (s)')
+        ylabel(ylabels{jj},'Interpreter','Latex')
+        grid on;
+end
         
         
-        
-
-%% test 
-
-% f = @(t,y) [ 4.86*y(3) - 4.86*10^14*y(1)*y(2);
-%              4.86*y(3) - 4.86*10^14*y(1)*y(2);
-%             -4.86*y(3) + 4.86*10^14*y(1)*y(2) ];
-% opt = odeset('maxstep',1e-13);
-% tspan = [0 1e-11];
-% y0 = [1.48e-8; 6.7608e-3; 1];  
-% [t_ir,y] = ode45(f,tspan,y0,opt);
-
-% 
-% A = [1 1; 2 1]; 
-% B = [1; 1]; 
-% Q = [2 1; 1 1];
-% X0 = [1; 1; 1; 1];
-% 
-% [T X] = ode45(@(t,X) mRiccati(t, X, A, B, Q), [0 10], X0) 
 
 %% subfunctions 
 
@@ -181,6 +260,7 @@ function [t, u, x, p, H] = intRiccati(M, A, B, Q, R, T, x0, v0)
     t = flip(t); 
     Prow = flip(Prow); 
 
+    % get H, x, p, u 
     xk = [x0; v0]; 
     for i = 2:length(t)
 
