@@ -146,8 +146,8 @@ figure()
 
         %% Homework 2 Question 2
 %% Cart Pole Problem
-clear all;
-close all;
+% clear all;
+% close all;
 
 % define initial condition
 x0  = [0,0,1,0]';
