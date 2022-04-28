@@ -3,6 +3,7 @@
 clear; clc 
 set(groot,'defaultAxesXGrid','on')
 set(groot,'defaultAxesYGrid','on')
+set(groot, 'defaultLineLineWidth', 2)
 
 %% Problem 1.2
 
@@ -64,16 +65,16 @@ sig_x_r = sig_xv(1);
 sig_v_r = sig_xv(2); 
 
 % xstar, vstar, ustar trajectories 
-xstar_r = 1/2 * ( ( sig_x_r * x_T ) * t_ir ... 
+xstar_r = 1/12 * sig_x_r * x_T * t_ir.^3 ... 
+    - 1/4 * sig_x_r * x_T * T * t_ir.^2 ... 
+    - 1/4 * sig_v_r * v_T * t_ir.^2 ... 
+    + v0*t_ir + x0; 
+ustar_r = 1/2 * ( ( sig_x_r * x_T ) * t_ir ... 
     - sig_x_r * x_T * T ... 
     - sig_v_r * v_T ); 
 vstar_r = 1/4 * sig_x_r * x_T * t_ir.^2 ... 
     - 1/2 * sig_x_r * x_T * T * t_ir ... 
     - 1/2 * sig_v_r * v_T * t_ir + v0; 
-ustar_r = 1/12 * sig_x_r * x_T * t_ir.^3 ... 
-    - 1/4 * sig_x_r * x_T * T * t_ir.^2 ... 
-    - 1/4 * sig_v_r * v_T * t_ir.^2 ... 
-    + v0*t_ir + x0; 
 
 % control effort 
 ustar2_r = ustar_r.^2; 
@@ -106,53 +107,13 @@ Q = zeros(2);
 R = 1;
     
 % intercept 
-[t_i, u_i, x_i, Prow] = intRiccati(M, A, B, Q, R, T, x0, v0); 
+[t_i, u_i, x_i, P_i, H_i] = intRiccati(M, A, B, Q, R, T, x0, v0); 
 
 % rendezvous 
 M = [sig_x_r, 0; 0, sig_v_r]; 
-[t_r, u_r, x_r, Prow] = intRiccati(M, A, B, Q, R, T, x0, v0); 
+[t_r, u_r, x_r, P_r, H_r] = intRiccati(M, A, B, Q, R, T, x0, v0); 
 
-%%
-
- 
-
-    % rendezvous 
-    M = [sig_x_r, 0; 0, sig_v_r]; 
-
-    % set ode45 params 
-    rel_tol = 1e-14;         % 1e-14 accurate; 1e-6 coarse 
-    abs_tol = 1e-14; 
-    options = odeset('reltol', rel_tol, 'abstol', abs_tol ); 
-
-    % solve matrix Riccati ODE (backwards) 
-    Pf = M; 
-    [t, Prow] = ode45(@(t, P) mRiccatiEq(t, P, A, B, Q, R), [T 0], Pf, options); 
-    t = flip(t); 
-    Prow = flip(Prow); 
-
-    xk = [x0; v0]; 
-    for i = 2:length(t)
-
-        xkm1 = xk; 
-        P = Prow(i,:); 
-        P = reshape(P, size(A)); 
-
-        K = inv(R) * B' * P; 
-
-        Atilde = [0 1; -K(1), -K(2)]; 
-        if i == 1
-            [~, xk] = ode45(@(t, x) Atilde*x, [t(i) t(i+1)], xkm1); 
-        else
-            [~, xk] = ode45(@(t, x) Atilde*x, [t(i-1) t(i)], xkm1); 
-        end 
-        xk = xk(end,:)'; 
-
-        u(i,:) = - K * xk; 
-        x(i,:) = xk; 
-
-    end 
-
-n = 3; p = 2; 
+n = 4; p = 2; 
 figure()
 
     subplot(n,p,1) 
@@ -165,6 +126,9 @@ figure()
     subplot(n,p,5) 
         plot(t_ir, xstar_i, t_i, x_i(:,1), '--') 
         title('x*(t)') 
+    subplot(n,p,7)
+        plot(t_i, H_i)
+        title('H*(t)')
         
         
     subplot(n,p,2) 
@@ -177,6 +141,9 @@ figure()
     subplot(n,p,6) 
         plot(t_ir, xstar_r, t_r, x_r(:,1), '--') 
         title('x*(t)') 
+    subplot(n,p,8)
+        plot(t_r, H_r)
+        title('H*(t)')
         
         
         
@@ -201,7 +168,7 @@ figure()
 
 %% subfunctions 
 
-function [t, u, x, Prow] = intRiccati(M, A, B, Q, R, T, x0, v0)
+function [t, u, x, p, H] = intRiccati(M, A, B, Q, R, T, x0, v0)
 
     % set ode45 params 
     rel_tol = 1e-14;         % 1e-14 accurate; 1e-6 coarse 
@@ -231,8 +198,13 @@ function [t, u, x, Prow] = intRiccati(M, A, B, Q, R, T, x0, v0)
         end 
         xk = xk(end,:)'; 
 
-        u(i,:) = - K * xk; 
+        pk = -2*P*xk; 
+        uk = - K * xk; 
+        H(i,:) = pk' * [A*xk + B*uk] - xk'*Q*xk - uk'*R*uk;
+
         x(i,:) = xk; 
+        p(i,:) = pk; 
+        u(i,:) = uk; 
 
     end 
 
