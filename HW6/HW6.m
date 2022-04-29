@@ -48,7 +48,7 @@ figure('name', ftitle)
         plot(t_ir, ustar_i); 
         title('u*(t)') 
         xlabel('Time') 
-    sgtitle(ftitle); 
+    sgtitle({ftitle; sprintf('Control effort = %.6g', ustar2_i_T)}); 
 
 % ------------------------------------------------------------------------
 % Problem 1.2b: rendezvous problem 
@@ -92,7 +92,7 @@ figure('name', ftitle)
         plot(t_ir, ustar_r); 
         title('u*(t)') 
         xlabel('Time') 
-    sgtitle(ftitle); 
+    sgtitle({ftitle; sprintf('Control effort = %.6g', ustar2_r_T)}); 
 
     
 %% Problem 1.3: Finite-Horizon LQR approach: intercept 
@@ -113,6 +113,37 @@ R = 1;
 M = [sig_x_r, 0; 0, sig_v_r]; 
 [t_r, u_r, x_r, P_r, H_r] = intRiccati(M, A, B, Q, R, T, x0, v0); 
 
+
+
+    % set ode45 params 
+    rel_tol = 1e-14;         % 1e-14 accurate; 1e-6 coarse 
+    abs_tol = 1e-14; 
+    options = odeset('reltol', rel_tol, 'abstol', abs_tol ); 
+
+    % solve matrix Riccati ODE (backwards) 
+    Pf = M; 
+    [t, Prow] = ode45(@(t, P) mRiccatiEq(t, P, A, B, Q, R), [T:-dt:0], Pf, options); 
+    t = flip(t); 
+    Prow = flip(Prow); 
+    P0 = Prow(1,:)'; 
+
+    % get H, x, p, u 
+    xk = [x0; v0]; 
+    for i = 1:length(t)
+
+        xkm1 = xk; 
+        P = Prow(i,:); 
+        P = reshape(P, size(A)); 
+
+        K(i,:) = inv(R) * B' * P; 
+
+    end 
+
+        tk = t; 
+        X0 = [x0; v0; P0]; 
+        [tk, xk] = ode45(@(t, X) mRiccatiEq_aug(t, X, A, B, Q, R), tk, X0, options);     
+%  dXdt = mRiccatiEq_aug(t, X, A, B, Q, R)
+ 
 n = 4; p = 2; 
 figure()
 
@@ -135,123 +166,38 @@ figure()
         title({'Rendezvous'; 'u*(t)'}) 
         legend('classical', 'Riccati', 'location', 'best')
     subplot(n,p,4) 
-        plot(t_ir, vstar_r, t_r, x_r(:,2), '--') 
+        plot(t_ir, vstar_r, t_r, x_r(:,2), '--')
         title('v*(t)') 
     subplot(n,p,6) 
-        plot(t_ir, xstar_r, t_r, x_r(:,1), '--') 
+        plot(t_ir, xstar_r, t_r, x_r(:,1), '--', tk, xk(:,1), ':') 
         title('x*(t)') 
     subplot(n,p,8)
         plot(t_r, H_r)
         title('H*(t)')
 
-        %% Homework 2 Question 2
-%% Cart Pole Problem
-% clear all;
-% close all;
-
-% define initial condition
-x0  = [0,0,1,0]';
-
-% define constants 
-M   = 2;
-m   = 1;
-L   = 0.5;
-g   = 9.81;
-
-% define A
-A   = [0,   1,      0,              0;
-       0,   0,      -(m*g)/M,       0;
-       0,   0,      0,              1;
-       0,   0,      g*(M+m)/(M*L),  0];
-
-% define B
-B   = [ 0;
-        1/M;   
-        0;  
-        -1/(M*L)];
-
-C   = [1,   0,      0,      0;
-       0,   0,      1,      0];
-
-D   = 0;
-
-%% Part 2.1
-
-%% Prine LQR Gain Matrix 
-%  Print out the LQR gain matrix, K∞_LQR , 
-%  and the eigenvalues of A ̃ = A − BK∞
-%  For Q = diag(1, 1, 5, 5), R = 1
-
-% Define Q and R
-Q = diag([1, 1, 5, 5]);
-R = 1;
-
-%% Find optimal gain K∞
-
-[K_LQR, S, eVal] = lqr(A,B,Q,R);
-
-Atilde    = (A - B*K_LQR);
-
-disp("Part 1:");
-K_LQR
-disp("EigenValues of Atilde: " );
-eVal
-
-
-%% Part B
-
-% Define Q and R
-Q = diag([1, 1, 10, 10]);
-R = 15;
-
-
-[K_LQR, S, eVal] = lqr(A,B,Q,R);
-
-Atilde    = (A - B*K_LQR);
-
-disp("Part 2:");
-K_LQR
-disp("EigenValues of Atilde: " );
-eVal
-
-
-% define time interval
-t    = 0:0.01:40;
-XMat = [];
-uMat = [];
-
-% propagate state - since system is LTI, we can find the paticular solution
-% such that x(t) = PHI(t,t0)*x0 so use the state transition matrix to
-% propage the state forward and also solve for the associated control input
-for ii=1:numel(t)
-    xk = expm(Atilde*t(ii))*x0;
-    uk = -K_LQR * xk;
-
-    XMat = [XMat xk];
-    uMat = [uMat uk];
-end
-
-ylabels = {'$x$','$\dot{x}$', '$\theta$','$\dot{\theta}$'};
-
-figure(1);
-
-for jj=1:size(XMat,1)
-        ax = subplot(2,2,jj);
-        plot(t,XMat(jj,:))
-        xlabel('Time (s)')
-        ylabel(ylabels{jj},'Interpreter','Latex')
-        grid on;
-end
+        
         
         
 
 %% subfunctions 
 
+function dx = intAtilde(t, x, tk, K, A, B)
+
+ik = find(tk == t); 
+Kk = K(ik,:); 
+
+% Atilde = [0 1; -K(1), -K(2)]; 
+Atilde = A - B*Kk; 
+
+dx = Atilde*x; 
+
+end 
+
 function [t, u, x, p, H] = intRiccati(M, A, B, Q, R, T, x0, v0)
 
     % set ode45 params 
-    rel_tol = 1e-14;         % 1e-14 accurate; 1e-6 coarse 
-    abs_tol = 1e-14; 
+    rel_tol = 1e-10;         % 1e-14 accurate; 1e-6 coarse 
+    abs_tol = 1e-10; 
     options = odeset('reltol', rel_tol, 'abstol', abs_tol ); 
 
     % solve matrix Riccati ODE (backwards) 
@@ -298,11 +244,24 @@ dPdt = dPdt(:);
 
 end 
 
-function dPdt = mRiccati(t, P, A, B, Q)
-P = reshape(P, size(A)); %Convert from "n^2"-by-1 to "n"-by-"n"
-dPdt = A.'*P + P*A - P*B*B.'*P + Q; %Determine derivative
-dPdt = dPdt(:); %Convert from "n"-by-"n" to "n^2"-by-1
+
+function dXdt = mRiccatiEq_aug(t, X, A, B, Q, R)
+
+x = X(1:2); 
+P = X(3:end); 
+P = reshape(P, size(A)); 
+
+K = inv(R) * B' * P; 
+Atilde = A - B*K; 
+dxdt = Atilde*x; 
+
+dPdt = - ( P*A + A'*P + Q - P*B*inv(R)*B'*P ); 
+dPdt = dPdt(:); 
+
+dXdt = [dxdt; dPdt]; 
+
 end 
+
 
 
 
