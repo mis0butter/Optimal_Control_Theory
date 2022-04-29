@@ -73,7 +73,8 @@ end
 
 stitle = {'x','dx', '\theta','d\theta'};
 
-figure(1);
+ftitle = 'Problem 3 - Infinite Horizon LQR'; 
+figure('name', ftitle, 'position', [100 100 700 700]);
 
 for jj=1:size(XMat,1)
     ax = subplot(3,2,jj);
@@ -95,7 +96,7 @@ subplot(3,2,5:6)
             }; 
     plt_txt(txt) 
 
-sgtitle('Problem 2') 
+sgtitle(ftitle) 
 
 
 

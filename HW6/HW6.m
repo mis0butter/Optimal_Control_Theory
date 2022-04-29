@@ -36,8 +36,8 @@ ustar_i = 1/2 * ( sig_x_i * x_T * t_ir ...
 ustar2_i = ustar_i.^2; 
 ustar2_i_T = trapz(ustar2_i) * dt; 
 
-ftitle = 'Problem 2.2a: Intercept'; 
-figure('name', ftitle) 
+ftitle = 'Problem 2.2a - Intercept'; 
+figure('name', ftitle, 'position', [100 100 700 700]) 
     subplot(3,1,1) 
         plot(t_ir, xstar_i); 
         title('x*(t)')
@@ -80,8 +80,8 @@ ustar_r = 1/2 * ( ( sig_x_r * x_T ) * t_ir ...
 ustar2_r = ustar_r.^2; 
 ustar2_r_T = trapz(ustar2_r) * dt; 
 
-ftitle = 'Problem 2.2b: Rendezvous'; 
-figure('name', ftitle) 
+ftitle = 'Problem 2.2b - Rendezvous'; 
+figure('name', ftitle, 'position', [100 100 700 700])
     subplot(3,1,1) 
         plot(t_ir, xstar_r); 
         title('x*(t)')
@@ -107,45 +107,45 @@ Q = zeros(2);
 R = 1;
     
 % intercept 
-[t_i, u_i, x_i, P_i, H_i] = intRiccati_aug(M, A, B, Q, R, T, x0, v0, dt); 
+[t_LQR_i, u_LQR_i, x_LQR_i, P_LQR_i, H_LQR_i] = intRiccati_aug(M, A, B, Q, R, T, x0, v0, dt); 
 
 % rendezvous 
 M = [sig_x_r, 0; 0, sig_v_r]; 
-[t_r, u_r, x_r, P_r, H_r] = intRiccati_aug(M, A, B, Q, R, T, x0, v0, dt); 
+[t_LQR_r, u_LQR_r, x_LQR_r, P_LQR_r, H_LQR_r] = intRiccati_aug(M, A, B, Q, R, T, x0, v0, dt); 
 
- 
 n = 4; p = 2; 
-figure()
+ftitle = 'Problem 2.3 - Finite Horizon LQR'; 
+figure('name', ftitle, 'position', [100 100 700 700])
 
     subplot(n,p,1) 
-        plot(t_ir, ustar_i, t_i, u_i, '--')
+        plot(t_ir, ustar_i, t_LQR_i, u_LQR_i, '--')
         title({'Intercept'; 'u*(t)'}) 
         legend('classical', 'Riccati', 'location', 'best')
     subplot(n,p,3) 
-        plot(t_ir, vstar_i, t_i, x_i(:,2), '--') 
+        plot(t_ir, vstar_i, t_LQR_i, x_LQR_i(:,2), '--') 
         title('v*(t)') 
     subplot(n,p,5) 
-        plot(t_ir, xstar_i, t_i, x_i(:,1), '--') 
+        plot(t_ir, xstar_i, t_LQR_i, x_LQR_i(:,1), '--') 
         title('x*(t)') 
     subplot(n,p,7)
-        plot(t_i, H_i)
+        plot(t_LQR_i, H_LQR_i)
         title('H*(t)')
         
     subplot(n,p,2) 
-        plot(t_ir, ustar_r, t_r, u_r, '--')
+        plot(t_ir, ustar_r, t_LQR_r, u_LQR_r, '--')
         title({'Rendezvous'; 'u*(t)'}) 
         legend('classical', 'Riccati', 'location', 'best')
     subplot(n,p,4) 
-        plot(t_ir, vstar_r, t_r, x_r(:,2), '--')
+        plot(t_ir, vstar_r, t_LQR_r, x_LQR_r(:,2), '--')
         title('v*(t)') 
     subplot(n,p,6) 
-        plot(t_ir, xstar_r, t_r, x_r(:,1), '--') 
+        plot(t_ir, xstar_r, t_LQR_r, x_LQR_r(:,1), '--') 
         title('x*(t)') 
     subplot(n,p,8)
-        plot(t_r, H_r)
+        plot(t_LQR_r, H_LQR_r)
         title('H*(t)')
         
-    sgtitle('Problem 2.3')
+    sgtitle(ftitle)
 
         
         
