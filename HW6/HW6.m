@@ -21,7 +21,7 @@ sig_x_i = ( (v0*T + x0)/x_T - 1 ) * 6/T^3;
 sig_v_i = 0; 
 
 % xstar, vstar, ustar trajectories 
-dt = 0.01; 
+dt = 0.0001; 
 t_ir = [0 : dt : T]; 
 xstar_i = 1/12 * sig_x_i * x_T * t_ir.^3 ... 
     - 1/4 * sig_x_i * x_T * T * t_ir.^2 ... 
@@ -38,17 +38,23 @@ ustar2_i_T = trapz(ustar2_i) * dt;
 
 ftitle = 'Problem 2.2a - Intercept'; 
 figure('name', ftitle, 'position', [100 100 700 700]) 
-    subplot(3,1,1) 
+    subplot(4,1,1) 
         plot(t_ir, xstar_i); 
         title('x*(t)')
-    subplot(3,1,2) 
+    subplot(4,1,2) 
         plot(t_ir, vstar_i);
         title('v*(t)') 
-    subplot(3,1,3) 
+    subplot(4,1,3) 
         plot(t_ir, ustar_i); 
         title('u*(t)') 
         xlabel('Time') 
-    sgtitle({ftitle; sprintf('Control effort = %.6g', ustar2_i_T)}); 
+    subplot(4,1,4) 
+        txt = {'' ; 
+            sprintf('sigma_x = %.6g', sig_x_i);
+            sprintf('sigma_v = %.6g', sig_v_i); 
+            sprintf('Control effort = %.6g', ustar2_i_T)}; 
+        plt_txt(txt); 
+    sgtitle(ftitle); 
 
 % ------------------------------------------------------------------------
 % Problem 1.2b: rendezvous problem 
@@ -82,17 +88,23 @@ ustar2_r_T = trapz(ustar2_r) * dt;
 
 ftitle = 'Problem 2.2b - Rendezvous'; 
 figure('name', ftitle, 'position', [100 100 700 700])
-    subplot(3,1,1) 
+    subplot(4,1,1) 
         plot(t_ir, xstar_r); 
         title('x*(t)')
-    subplot(3,1,2) 
+    subplot(4,1,2) 
         plot(t_ir, vstar_r);
         title('v*(t)') 
-    subplot(3,1,3) 
+    subplot(4,1,3) 
         plot(t_ir, ustar_r); 
         title('u*(t)') 
         xlabel('Time') 
-    sgtitle({ftitle; sprintf('Control effort = %.6g', ustar2_r_T)}); 
+    subplot(4,1,4) 
+        txt = {'' ; 
+            sprintf('sigma_x = %.6g', sig_x_r);
+            sprintf('sigma_v = %.6g', sig_v_r); 
+            sprintf('Control effort = %.6g', ustar2_r_T)}; 
+        plt_txt(txt); 
+    sgtitle(ftitle); 
 
     
 %% Problem 1.3: Finite-Horizon LQR approach: intercept 
@@ -102,7 +114,7 @@ A = [0 1; 0 0 ];
 B = [0 1]'; 
 
 % LQR matrices 
-M = [sig_x_i, 0; 0, sig_v_i]; 
+M = 1/2*[sig_x_i, 0; 0, sig_v_i]; 
 Q = zeros(2); 
 R = 1;
     
@@ -110,7 +122,7 @@ R = 1;
 [t_LQR_i, u_LQR_i, x_LQR_i, P_LQR_i, H_LQR_i] = intRiccati_aug(M, A, B, Q, R, T, x0, v0, dt); 
 
 % rendezvous 
-M = [sig_x_r, 0; 0, sig_v_r]; 
+M = 1/2*[sig_x_r, 0; 0, sig_v_r]; 
 [t_LQR_r, u_LQR_r, x_LQR_r, P_LQR_r, H_LQR_r] = intRiccati_aug(M, A, B, Q, R, T, x0, v0, dt); 
 
 n = 4; p = 2; 
@@ -168,8 +180,8 @@ end
 function [t, u, x, p, H] = intRiccati(M, A, B, Q, R, T, x0, v0)
 
     % set ode45 params 
-    rel_tol = 1e-10;         % 1e-14 accurate; 1e-6 coarse 
-    abs_tol = 1e-10; 
+    rel_tol = 1e-13;         % 1e-14 accurate; 1e-6 coarse 
+    abs_tol = 1e-13; 
     options = odeset('reltol', rel_tol, 'abstol', abs_tol ); 
 
     % solve matrix Riccati ODE (backwards) 
@@ -211,8 +223,8 @@ end
 function [t, u, x, p, H] = intRiccati_aug(M, A, B, Q, R, T, x0, v0, dt)
 
     % set ode45 params 
-    rel_tol = 1e-10;         % 1e-14 accurate; 1e-6 coarse 
-    abs_tol = 1e-10; 
+    rel_tol = 1e-13;         % 1e-14 accurate; 1e-6 coarse 
+    abs_tol = 1e-13; 
     options = odeset('reltol', rel_tol, 'abstol', abs_tol ); 
 
     % solve matrix Riccati ODE (backwards) 

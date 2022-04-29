@@ -57,8 +57,8 @@ eVal_2
 
 % define time interval
 t    = 0:0.01:40;
-XMat = [];
-uMat = [];
+X = [];
+u = [];
 
 % propagate state - since system is LTI, we can find the paticular solution
 % such that x(t) = PHI(t,t0)*x0 so use the state transition matrix to
@@ -67,8 +67,8 @@ for ii=1:numel(t)
     xk = expm(Atilde*t(ii))*x0;
     uk = -K_LQR_1 * xk;
 
-    XMat = [XMat xk];
-    uMat = [uMat uk];
+    X = [X xk];
+    u = [u; uk];
 end
 
 stitle = {'x','dx', '\theta','d\theta'};
@@ -76,20 +76,22 @@ stitle = {'x','dx', '\theta','d\theta'};
 ftitle = 'Problem 3 - Infinite Horizon LQR'; 
 figure('name', ftitle, 'position', [100 100 700 700]);
 
-for jj=1:size(XMat,1)
-    ax = subplot(3,2,jj);
-    plot(t,XMat(jj,:))
-    xlabel('Time (s)')
+for jj=1:length(x0)
+    ax = subplot(6,1,jj);
+    plot(t,X(jj,:))
     title(stitle{jj})
-    grid on;
 end
-subplot(3,2,5:6) 
-    txt = { sprintf('2.1: K_{LQR} = [%.5g %.5g %.5g %.5g]',  ... 
+subplot(6,1,5)
+    plot(t, u); 
+    xlabel('Time (s)')
+
+subplot(6,1,6) 
+    txt = { sprintf('2.1: K_{LQR} = [%.5g, %.5g, %.5g, %.5g]',  ... 
             K_LQR_1(1), K_LQR_1(2), K_LQR_1(3), K_LQR_1(4)); ... 
             sprintf('eig(Atilde) = [%.5g + j%.5g, %.5g + j%.5g, %.5g + j%.5g, %.5g + j%.5g]', ... 
             real(eVal_1(1)), imag(eVal_1(1)), real(eVal_1(2)), imag(eVal_1(2)), real(eVal_1(3)), imag(eVal_1(3)), real(eVal_1(4)), imag(eVal_1(4)) ) ; ... 
             ''; 
-            sprintf('2.2: K_{LQR} = [%.5g %.5g %.5g %.5g]',  ... 
+            sprintf('2.2: K_{LQR} = [%.5g, %.5g, %.5g, %.5g]',  ... 
             K_LQR_2(1), K_LQR_2(2), K_LQR_2(3), K_LQR_2(4)); ... 
             sprintf('eig(Atilde) = [%.5g + j%.5g, %.5g + j%.5g, %.5g + j%.5g, %.5g + j%.5g]', ... 
             real(eVal_2(1)), imag(eVal_2(1)), real(eVal_2(2)), imag(eVal_2(2)), real(eVal_2(3)), imag(eVal_2(3)), real(eVal_2(4)), imag(eVal_2(4)) ) ; ... 
@@ -99,14 +101,3 @@ subplot(3,2,5:6)
 sgtitle(ftitle) 
 
 
-
-function plt_txt(txt)
-
-pos = get(gca, 'position'); 
-
-annotation('textbox', pos, ...
-  'String', txt, ...
-  'edgecolor', 'none');
-axis off 
-
-end 
