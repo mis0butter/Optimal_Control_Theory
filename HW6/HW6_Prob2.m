@@ -27,15 +27,9 @@ D = 0;
 Q = diag([1, 1, 5, 5]);
 R = 1;
 
-% K infinity 
+% K infinity and Atilde 
 [K_LQR_1, S_1, eVal_1] = lqr(A,B,Q,R);
-
 Atilde = (A - B*K_LQR_1);
-
-disp("Part 1:");
-K_LQR_1
-disp("EigenValues of Atilde: " );
-eVal_1
 
 % ------------------------------------------------------------------------
 % Part 2.2
@@ -44,47 +38,40 @@ eVal_1
 Q = diag([1, 1, 10, 10]);
 R = 15;
 
-
+% K infinity and Atilde 
 [K_LQR_2, S_2, eVal_2] = lqr(A,B,Q,R);
+Atilde = (A - B*K_LQR_2);
 
-Atilde    = (A - B*K_LQR_2);
-
-disp("Part 2:");
-K_LQR_2
-disp("EigenValues of Atilde: " );
-eVal_2
-
-
-% define time interval
-t    = 0:0.01:40;
-X = [];
-u = [];
-
-% propagate state - since system is LTI, we can find the paticular solution
-% such that x(t) = PHI(t,t0)*x0 so use the state transition matrix to
-% propage the state forward and also solve for the associated control input
+% propagate state x(t) = Phi(t,t0)*x0, where Phi is state transition matrix
+t = 0:0.01:40; 
+X = []; 
+u = []; 
 for ii=1:numel(t)
-    xk = expm(Atilde*t(ii))*x0;
-    uk = -K_LQR_1 * xk;
+    
+    xk = expm(Atilde*t(ii))*x0; 
+    uk = -K_LQR_1 * xk; 
 
     X = [X xk];
     u = [u; uk];
+    
 end
+
+% ------------------------------------------------------------------------
+% Plot 
 
 stitle = {'x','dx', '\theta','d\theta'};
 
 ftitle = 'Problem 3 - Infinite Horizon LQR'; 
 figure('name', ftitle, 'position', [100 100 700 700]);
 
-for jj=1:length(x0)
-    ax = subplot(6,1,jj);
-    plot(t,X(jj,:))
-    title(stitle{jj})
+for i = 1:length(x0)
+    ax = subplot(6,1,i);
+    plot(t,X(i,:))
+    title(stitle{i})
 end
 subplot(6,1,5)
     plot(t, u); 
     xlabel('Time (s)')
-
 subplot(6,1,6) 
     txt = { sprintf('2.1: K_{LQR} = [%.5g, %.5g, %.5g, %.5g]',  ... 
             K_LQR_1(1), K_LQR_1(2), K_LQR_1(3), K_LQR_1(4)); ... 
@@ -97,7 +84,6 @@ subplot(6,1,6)
             real(eVal_2(1)), imag(eVal_2(1)), real(eVal_2(2)), imag(eVal_2(2)), real(eVal_2(3)), imag(eVal_2(3)), real(eVal_2(4)), imag(eVal_2(4)) ) ; ... 
             }; 
     plt_txt(txt) 
-
 sgtitle(ftitle) 
 
 

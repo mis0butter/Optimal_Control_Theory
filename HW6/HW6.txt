@@ -246,14 +246,6 @@ subplot(6,1,6)
             }; 
     plt_txt(txt) 
 sgtitle(ftitle) 
-
-%% 
-
-h = findobj('type', 'Figure'); 
-for i = 1:length(h)
-    hfig = h(i); 
-    save_png(hfig); 
-end 
         
 
 %% subfunctions 
@@ -269,20 +261,6 @@ end
     pos = get(h,'Position');
     set(h,'PaperPositionMode','Auto','PaperUnits','Inches','PaperSize',[pos(3), pos(4)])
     print(h,[name '.pdf'],'-dpdf','-r0')
-    
-end 
-
-function save_png(h, name) 
-
-if ~exist('name', 'var') 
-    name = get(h, 'name'); 
-end 
-
-% save as cropped pdf 
-    set(h,'Units','Inches');
-    pos = get(h,'Position');
-    set(h,'PaperPositionMode','Auto','PaperUnits','Inches','PaperSize',[pos(3), pos(4)])
-    print(h,[name '.png'],'-dpng','-r0')
     
 end 
 
